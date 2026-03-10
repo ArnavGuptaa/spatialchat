@@ -10,9 +10,23 @@ Ask questions like *"Show Snap25 expression in the mouse brain Visium dataset"* 
 
 ## Why This Exists
 
-SpatialChat is designed as a **reference architecture** for building multi-agent systems with LangGraph. The spatial transcriptomics domain is just one application. You can plug in your own sub-agents, tools, and data sources to adapt it to any domain.
+SpatialChat is designed as a **reference architecture** for building multi-agent systems with LangGraph.
 
-The core pattern (supervisor routing to specialized sub-agents, each with their own tools and prompts) is general-purpose and extensible. Fork it, swap out the biology, and build your own agent.
+The core pattern (supervisor routing to specialized sub-agents, each with their own tools and prompts) is general-purpose and extensible. Fork it, add your own sub-agents and do intricate analysis.
+
+## What It Can Do
+
+SpatialChat ships with four specialized sub-agents, each with their own toolset. A supervisor routes every user query to the right agent and synthesizes the results into a single response with embedded plots.
+
+**Dataset discovery and loading.** Search available datasets by tissue, species, or technology. Load any h5ad file with spatial coordinates. Fuzzy gene name matching handles typos and case mismatches automatically. An LRU cache manages memory so multiple large datasets (1-5 GB each) can be swapped without crashing.
+
+**Spatial gene expression.** Plot any gene on tissue coordinates with a color-scaled scatter plot. Compare expression between two cell groups with a Mann-Whitney U test (p-value, log2 fold change, violin plot). View mean expression across all cell types as a ranked bar chart. Visualize spatial domains, clusters, or any categorical annotation on the tissue.
+
+**Spatial statistics.** Compute Moran's I spatial autocorrelation for individual genes or find the top 10 most spatially variable genes across the dataset. Run co-occurrence analysis to see which cell types tend to appear near each other in tissue.
+
+**Neighborhood analysis.** Test which cell type pairs are spatially enriched as neighbors (neighborhood enrichment). Compute a cell-cell contact frequency matrix showing how often each pair of types are direct spatial neighbors.
+
+**Streamlit frontend.** Multi-turn chat with persistent conversation threads, a sidebar showing the currently loaded dataset and available catalog, inline plot rendering, and auto-generated follow-up suggestions after each answer.
 
 ## Quick Start
 
@@ -101,6 +115,18 @@ The documentation is split into focused guides:
 |---|---|---|---|---|
 | `mouse_brain_seqfish` | Mouse brain sub-ventricular zone | 19,416 | 351 | seqFISH |
 | `mouse_brain_visium` | Mouse brain sagittal section | 2,688 | 18,078 | 10x Visium |
+
+## Future Directions
+
+**Vector database backend instead of h5ad files.** The current architecture loads full AnnData objects from h5ad files into memory and queries them with pandas/numpy. A natural next step is to replace this with a RAG pipeline backed by a vector database (e.g., Pinecone, Weaviate, or Chroma). Gene expression profiles and cell metadata would be embedded and indexed, letting the agent retrieve relevant slices without loading entire datasets. This would eliminate the LRU memory ceiling and scale to hundreds of datasets.
+
+**Trajectory and RNA velocity agents.** Add a sub-agent for pseudotime analysis (diffusion pseudotime, PAGA) and RNA velocity (scVelo). This would let users ask questions like "What is the differentiation trajectory of these cells?" or "Show me the velocity field overlaid on the UMAP."
+
+**Cross-dataset comparison agent.** A sub-agent that can load two datasets simultaneously and compare them: shared cell types, differential gene expression across conditions, batch-corrected joint embeddings (Harmony, scVI).
+
+**Natural language data ingestion.** Let users upload raw h5ad files through the chat interface and have an ingestion agent automatically detect spatial coordinates, cell type annotations, and gene naming conventions, then register the dataset in the catalog without manual configuration.
+
+**Multimodal histology integration.** Visium and MERFISH datasets often come with H&E tissue images. A future agent could overlay gene expression or cell annotations on the actual histology image, and use vision models to answer questions about tissue morphology alongside transcriptomics.
 
 ## License
 
