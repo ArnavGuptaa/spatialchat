@@ -15,7 +15,7 @@ from data.loaders import load_catalog, load_dataset, get_cache
 from data.metadata_store import find_similar_genes, get_gene_list, get_celltypes
 
 
-# ── Pydantic args schemas ────────────────────────────────────
+# Pydantic args schemas
 
 class SearchArgs(BaseModel):
     query: str = Field(description="Search text like 'mouse brain' or 'human visium'")
@@ -51,7 +51,7 @@ class ValidateGeneArgs(BaseModel):
         return v.strip()
 
 
-# ── Tools ─────────────────────────────────────────────────────
+# Tools
 
 @tool(args_schema=SearchArgs)
 def search_datasets(query: str) -> str:
@@ -153,6 +153,6 @@ def validate_gene(dataset_id: str, gene_name: str) -> str:
                   f"or search for a different gene. I can validate gene names and find similar matches.")
 
 
-# ── Registry ──────────────────────────────────────────────────
+# Registry
 
 DATASET_TOOLS = [search_datasets, load_and_summarize_dataset, validate_gene]

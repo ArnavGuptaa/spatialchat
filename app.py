@@ -19,7 +19,7 @@ warnings.filterwarnings("ignore", message=".*PydanticSerializationUnexpectedValu
 
 import streamlit as st
 
-# ── Page config ──────────────────────────────────────────────
+# Page config
 
 st.set_page_config(
     page_title="SpatialChat",
@@ -28,7 +28,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Session state init ───────────────────────────────────────
+# Session state init
 
 if "thread_id" not in st.session_state:
     st.session_state.thread_id = uuid.uuid4().hex
@@ -40,7 +40,7 @@ if "active_dataset_id" not in st.session_state:
     st.session_state.active_dataset_id = None
 
 
-# ── Sidebar ──────────────────────────────────────────────────
+# Sidebar
 
 with st.sidebar:
     st.title("SpatialChat")
@@ -88,7 +88,7 @@ with st.sidebar:
     st.caption(f"Thread: `{st.session_state.thread_id[:8]}...`")
 
 
-# ── Chat display ─────────────────────────────────────────────
+# Chat display
 
 st.markdown("### Ask me about spatial transcriptomics data")
 
@@ -104,7 +104,7 @@ for entry in st.session_state.chat_history:
                 st.warning("Could not render plot.")
 
 
-# ── User input ───────────────────────────────────────────────
+# User input
 
 user_input = st.chat_input("e.g. Snap25 expression in Mouse Brain")
 

@@ -26,7 +26,7 @@ class SpatialChatState(TypedDict):
     # Dataset tracking — persists across turns (last-write-wins, no reducer)
     active_dataset_id: Optional[str]
 
-    # ── Per-invocation fields (reset by 'reset' node each turn) ──
+    # Per-invocation fields (reset by 'reset' node each turn)
     # No reducer = each node REPLACES the value.
     # Sub-agent nodes manually concat: existing + new
 

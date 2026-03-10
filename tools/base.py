@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 logger = logging.getLogger(__name__)
 
 
-# ── Plot Store ────────────────────────────────────────────────
+# Plot Store
 # Keeps base64 image data OUT of LLM context entirely.
 # Tools store plots here and return only a short plot_id string.
 
@@ -57,7 +57,7 @@ def clear_plot_store() -> None:
     _plot_store.clear()
 
 
-# ── Tool Result Formatting ────────────────────────────────────
+# Tool Result Formatting
 
 def tool_result(
     *,

@@ -12,7 +12,7 @@ import pytest
 import anndata as ad
 from unittest.mock import patch, MagicMock
 
-# ── Fixtures ──────────────────────────────────────────────────
+# Fixtures
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def mock_cache(synthetic_adata):
     return mock
 
 
-# ── Base utility tests ────────────────────────────────────────
+# Base utility tests
 
 
 class TestPlotStore:
@@ -101,7 +101,7 @@ class TestToolResult:
         assert result["plot_id"] == "abc12345"
 
 
-# ── Dataset tool tests ────────────────────────────────────────
+# Dataset tool tests
 
 
 class TestDatasetTools:
@@ -148,7 +148,7 @@ class TestDatasetTools:
             assert result["success"] is False
 
 
-# ── Expression tool tests ─────────────────────────────────────
+# Expression tool tests
 
 
 class TestExpressionTools:
@@ -194,7 +194,7 @@ class TestExpressionTools:
         assert result["success"] is False
 
 
-# ── Data cache tests ──────────────────────────────────────────
+# Data cache tests
 
 
 class TestDatasetCache:
@@ -236,7 +236,7 @@ class TestDatasetCache:
         assert set(cache.loaded_ids()) == {"a", "b"}
 
 
-# ── Catalog tests ─────────────────────────────────────────────
+# Catalog tests
 
 
 class TestCatalog:
@@ -251,7 +251,7 @@ class TestCatalog:
             assert "species" in info
 
 
-# ── Routing tests ─────────────────────────────────────────────
+# Routing tests
 
 
 class TestRouting:

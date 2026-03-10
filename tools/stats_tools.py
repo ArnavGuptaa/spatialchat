@@ -25,7 +25,7 @@ def _ensure_neighbors(adata):
         sq.gr.spatial_neighbors(adata, coord_type="generic")
 
 
-# ── Args schemas ──────────────────────────────────────────────
+# Args schemas
 
 class AutocorrArgs(BaseModel):
     dataset_id: str = Field(description="Dataset ID")
@@ -37,7 +37,7 @@ class CoOccurrenceArgs(BaseModel):
     annotation_key: str = Field(description="Column with cluster labels")
 
 
-# ── Tools ─────────────────────────────────────────────────────
+# Tools
 
 @tool(args_schema=AutocorrArgs)
 def spatial_autocorrelation(dataset_id: str, gene: str = "") -> str:
@@ -145,6 +145,6 @@ def co_occurrence(dataset_id: str, annotation_key: str) -> str:
                        plot_id=pid)
 
 
-# ── Registry ──────────────────────────────────────────────────
+# Registry
 
 SPATIAL_STATS_TOOLS = [spatial_autocorrelation, co_occurrence]

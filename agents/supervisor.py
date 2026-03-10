@@ -27,7 +27,7 @@ from agents.state import (
 from tools.base import get_plot_base64
 
 
-# ── Shared text extraction helpers ────────────────────────────
+# Shared text extraction helpers
 
 def _extract_text(content) -> str:
     """Extract plain text from message content (str or multimodal list)."""
@@ -55,7 +55,7 @@ def _get_last_user_text(state: SpatialChatState) -> str:
     return last_text
 
 
-# ── Supervisor ───────────────────────────────────────────────
+# Supervisor
 
 SUPERVISOR_PROMPT = """You route user queries to specialist sub-agents. Pick ONE at a time.
 
@@ -91,13 +91,13 @@ def create_supervisor_node():
         if errors >= MAX_RETRIES or turns >= MAX_SUPERVISOR_TURNS:
             return {"next_agent": FINISH, "supervisor_turns": turns + 1}
 
-        # ── Pre-LLM fast path ──────────────────────────────────
+        # Pre-LLM fast path
         if active_ds and DATASET_FINDER in visited_set:
             if EXPLORATORY not in visited_set:
                 return {"next_agent": EXPLORATORY, "supervisor_turns": turns + 1}
             return {"next_agent": FINISH, "supervisor_turns": turns + 1}
 
-        # ── Build COMPACT context for LLM ─────────────────────
+        # Build COMPACT context for LLM
         ctx = []
         ctx.append(f"Dataset: {active_ds or 'NONE'}")
         if visited:
@@ -123,7 +123,7 @@ def create_supervisor_node():
         decision = llm.invoke(llm_input)
         chosen = decision.next_agent
 
-        # ── Post-LLM guards ───────────────────────────────────
+        # Post-LLM guards
         if chosen == DATASET_FINDER and active_ds:
             chosen = FINISH
         if chosen != FINISH and chosen in visited_set:
@@ -134,7 +134,7 @@ def create_supervisor_node():
     return supervisor_node
 
 
-# ── Synthesizer ───────────────────────────────────────────────
+# Synthesizer
 
 SYNTHESIS_PROMPT = """Synthesize a final answer from the analysis results below.
 Be concise. Cite numbers. If plots were generated, mention them (they will be attached).

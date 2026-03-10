@@ -91,7 +91,7 @@ def build_metadata_from_adata(dataset_id: str, adata, celltype_col: Optional[str
     }
 
 
-# ── Query helpers (used by tools) ────────────────────────────
+# Query helpers (used by tools)
 
 
 def get_gene_list(dataset_id: str) -> Optional[list[str]]:

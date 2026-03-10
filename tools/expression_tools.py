@@ -30,7 +30,7 @@ def _get_expr(adata, gene: str) -> np.ndarray:
     return expr.flatten()
 
 
-# ── Args schemas ──────────────────────────────────────────────
+# Args schemas
 
 class SpatialExprArgs(BaseModel):
     dataset_id: str = Field(description="Dataset ID")
@@ -59,7 +59,7 @@ class GeneExprByCelltypeArgs(BaseModel):
     gene: str = Field(description="Gene symbol (case-sensitive — call validate_gene first)")
 
 
-# ── Tools ─────────────────────────────────────────────────────
+# Tools
 
 @tool(args_schema=SpatialExprArgs)
 def get_gene_expression_spatial(dataset_id: str, gene: str) -> str:
@@ -317,7 +317,7 @@ def gene_expression_by_celltype(dataset_id: str, gene: str) -> str:
     )
 
 
-# ── Registry ──────────────────────────────────────────────────
+# Registry
 
 EXPRESSION_TOOLS = [
     get_gene_expression_spatial,

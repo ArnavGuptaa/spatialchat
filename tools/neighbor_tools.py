@@ -115,6 +115,6 @@ def interaction_matrix(dataset_id: str, annotation_key: str) -> str:
                        plot_id=pid)
 
 
-# ── Registry ──────────────────────────────────────────────────
+# Registry
 
 NEIGHBORHOOD_TOOLS = [neighborhood_enrichment, interaction_matrix]

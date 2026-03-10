@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=68.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "spatialchat"
@@ -25,6 +25,9 @@ dependencies = [
     "python-dotenv>=1.0",
 ]
 
+[project.scripts]
+run-app = "spatialchat._cli:main"
+
 [project.optional-dependencies]
 dev = ["pytest>=7.0", "pytest-asyncio>=0.21.0", "ruff>=0.1.0", "mypy>=1.5"]
 fuzzy = ["rapidfuzz>=3.0"]
@@ -32,3 +35,6 @@ fuzzy = ["rapidfuzz>=3.0"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.hatch.build.targets.wheel]
+packages = ["spatialchat"]

@@ -27,9 +27,7 @@ logger = logging.getLogger(__name__)
 DATA_DIR = Path(__file__).parent
 
 
-# ──────────────────────────────────────────────────────────────
 # Catalog
-# ──────────────────────────────────────────────────────────────
 
 def load_catalog() -> dict:
     """Load the dataset catalog from catalog.json."""
@@ -61,9 +59,7 @@ def get_celltype_column(dataset_id: str) -> Optional[str]:
     return info.get("celltype")
 
 
-# ──────────────────────────────────────────────────────────────
 # Dataset Cache Manager
-# ──────────────────────────────────────────────────────────────
 
 class DatasetCache:
     """
@@ -113,9 +109,7 @@ def get_cache() -> DatasetCache:
     return _cache
 
 
-# ──────────────────────────────────────────────────────────────
 # Universal Loader
-# ──────────────────────────────────────────────────────────────
 
 def load_dataset(dataset_id: str) -> ad.AnnData:
     """

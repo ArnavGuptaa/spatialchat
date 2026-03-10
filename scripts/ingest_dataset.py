@@ -152,7 +152,7 @@ def main():
 
     args = parser.parse_args()
 
-    # ── Resolve paths ────────────────────────────────────────
+    # Resolve paths
     h5ad_path = Path(args.h5ad).resolve()
     if not h5ad_path.exists():
         print(f"ERROR: File not found: {h5ad_path}", file=sys.stderr)
@@ -165,7 +165,7 @@ def main():
 
     anndata_dir.mkdir(parents=True, exist_ok=True)
 
-    # ── Validate h5ad ────────────────────────────────────────
+    # Validate h5ad
     print(f"Reading {h5ad_path}...")
     try:
         adata = ad.read_h5ad(h5ad_path)
@@ -200,7 +200,7 @@ def main():
     else:
         print("  No celltype column specified (celltype tools won't work for this dataset)")
 
-    # ── Copy or symlink h5ad ─────────────────────────────────
+    # Copy or symlink h5ad
     dest_path = anndata_dir / f"{args.dataset_id}.h5ad"
     relative_data_file = f"anndata/{args.dataset_id}.h5ad"
 
@@ -220,7 +220,7 @@ def main():
             shutil.copy2(h5ad_path, dest_path)
             print(f"  Copied ({dest_path.stat().st_size / 1e6:.1f} MB)")
 
-    # ── Update catalog.json ──────────────────────────────────
+    # Update catalog.json
     if catalog_path.exists():
         with open(catalog_path) as f:
             catalog = json.load(f)
@@ -255,7 +255,7 @@ def main():
 
     print(f"  Catalog updated: {catalog_path}")
 
-    # ── Build metadata database ──────────────────────────────
+    # Build metadata database
     # Import here to avoid circular imports during standalone usage
     sys.path.insert(0, str(project_root))
     from data.metadata_store import build_metadata_from_adata, save_metadata
@@ -267,7 +267,7 @@ def main():
     print(f"    Genes indexed: {len(metadata['genes'])}")
     print(f"    Cell types indexed: {len(metadata['celltypes'])}")
 
-    # ── Done ─────────────────────────────────────────────────
+    # Done
     print(f"\nSuccessfully ingested '{args.dataset_id}'!")
     print(f"  Data file: {dest_path}")
     print(f"\nYou can now query this dataset in SpatialChat:")

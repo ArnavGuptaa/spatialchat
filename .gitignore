@@ -1,11 +1,10 @@
-# ── Environment & secrets ────────────────────────────────────
+# Environment & secrets
 .env
-.env.*
 *.env.local
 **/.env
 **/secrets.*
 
-# ── Python ───────────────────────────────────────────────────
+# Python
 **/__pycache__/
 *.py[cod]
 *$py.class
@@ -17,27 +16,27 @@ build/
 venv/
 env/
 
-# ── Jupyter ──────────────────────────────────────────────────
+# Jupyter
 .ipynb_checkpoints/
 
-# ── Data (large h5ad files) ──────────────────────────────────
+# Data (large h5ad files)
 data/anndata/*.h5ad
 data/cache/
 *.h5
 
-# ── LangGraph Studio internal ────────────────────────────────
+# LangGraph Studio internal
 .langgraph_api/
 
-# ── IDE ──────────────────────────────────────────────────────
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# ── OS ───────────────────────────────────────────────────────
+# OS
 .DS_Store
 Thumbs.db
 
-# ── Misc ─────────────────────────────────────────────────────
+# Misc
 *.log

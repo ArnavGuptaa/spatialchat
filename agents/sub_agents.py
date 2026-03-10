@@ -32,7 +32,7 @@ from tools.neighbor_tools import NEIGHBORHOOD_TOOLS
 logger = logging.getLogger(__name__)
 
 
-# ── Prompts (kept short) ─────────────────────────────────────
+# Prompts (kept short)
 
 DATASET_FINDER_PROMPT = (
     "You find and load spatial transcriptomics datasets.\n"
@@ -67,7 +67,7 @@ NEIGHBORHOOD_PROMPT = (
 )
 
 
-# ── Compact helpers ───────────────────────────────────────────
+# Compact helpers
 
 MAX_DATA_CHARS = 300
 
@@ -114,7 +114,7 @@ def _compact_for_context(parsed: dict) -> dict:
     return compact
 
 
-# ── Sub-agent runner ──────────────────────────────────────────
+# Sub-agent runner
 
 def build_sub_agent(llm, tools: list, system_prompt: str, max_steps: int = 3):
     """
@@ -233,7 +233,7 @@ def build_sub_agent(llm, tools: list, system_prompt: str, max_steps: int = 3):
     return run
 
 
-# ── Factory functions ─────────────────────────────────────────
+# Factory functions
 
 def create_dataset_finder_agent():
     llm = get_settings().get_sub_agent_llm()

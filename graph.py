@@ -31,7 +31,7 @@ from tools.base import get_plot_base64, clear_plot_store
 logger = logging.getLogger(__name__)
 
 
-# ── Helpers ───────────────────────────────────────────────────
+# Helpers
 
 def _extract_text(content) -> str:
     """Extract plain text from message content (handles both str and multimodal list).
@@ -75,7 +75,7 @@ def _sub_agent_input(state: SpatialChatState, agent_name: str) -> list:
     return [HumanMessage(content=query)]
 
 
-# ── Agent cache (lazy creation, reused across invocations) ────
+# Agent cache (lazy creation, reused across invocations)
 
 _agents: dict[str, object] = {}
 
@@ -87,7 +87,7 @@ def _get_agent(name: str, factory):
     return _agents[name]
 
 
-# ── Reset node ───────────────────────────────────────────────
+# Reset node
 
 def _reset_node(state: SpatialChatState) -> dict:
     """Reset per-invocation state at the start of each user turn.
@@ -106,7 +106,7 @@ def _reset_node(state: SpatialChatState) -> dict:
     }
 
 
-# ── Node builders ─────────────────────────────────────────────
+# Node builders
 
 def _make_node(agent_name: str, factory):
     """
@@ -157,7 +157,7 @@ def route_from_supervisor(state: SpatialChatState) -> str:
     return nxt if nxt in valid else "synthesizer"
 
 
-# ── Graph assembly ────────────────────────────────────────────
+# Graph assembly
 
 def build_graph(checkpointer=None):
     """
@@ -193,7 +193,7 @@ def build_graph(checkpointer=None):
     return g.compile(checkpointer=checkpointer)
 
 
-# ── Singleton graph (for LangGraph Studio) ────────────────────
+# Singleton graph (for LangGraph Studio)
 
 _compiled = None
 
@@ -213,7 +213,7 @@ def make_graph():
     return get_graph()
 
 
-# ── Public chat interface (for Streamlit) ─────────────────────
+# Public chat interface (for Streamlit)
 
 def chat(message: str, thread_id: str = "default") -> dict:
     """
