@@ -1,0 +1,34 @@
+{
+  "mouse_brain_seqfish": {
+    "display_name": "Mouse Brain Sub-Ventricular Zone (seqFISH)",
+    "tissue": "brain",
+    "region": "sub-ventricular zone",
+    "species": "mouse",
+    "technology": "seqFISH",
+    "source": "Squidpy built-in",
+    "description": "seqFISH spatial transcriptomics of the mouse brain sub-ventricular zone. Single-cell resolution with targeted gene panel.",
+    "n_spots_approx": 19416,
+    "n_genes_approx": 351,
+    "annotations": ["celltype_mapped_refined"],
+    "celltype": "celltype_mapped_refined",
+    "data_file": "anndata/seqfish.h5ad",
+    "reference": "Lohoff et al. 2021, Nature Biotechnology",
+    "license": "CC BY 4.0"
+  },
+  "mouse_brain_visium": {
+    "display_name": "Mouse Brain Sagittal (10x Visium)",
+    "tissue": "brain",
+    "region": "sagittal section",
+    "species": "mouse",
+    "technology": "10x Visium",
+    "source": "Squidpy built-in",
+    "description": "10x Visium spatial transcriptomics of the mouse brain sagittal section. Spot-level resolution with whole-transcriptome coverage.",
+    "n_spots_approx": 2688,
+    "n_genes_approx": 18078,
+    "annotations": ["cluster", "leiden", "in_tissue", "n_genes_by_counts", "total_counts"],
+    "celltype": "cluster",
+    "data_file": "anndata/visium.h5ad",
+    "reference": "10x Genomics",
+    "license": "CC BY 4.0"
+  }
+}
