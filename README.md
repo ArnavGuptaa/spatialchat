@@ -127,7 +127,3 @@ The documentation is split into focused guides:
 **Natural language data ingestion.** Let users upload raw h5ad files through the chat interface and have an ingestion agent automatically detect spatial coordinates, cell type annotations, and gene naming conventions, then register the dataset in the catalog without manual configuration.
 
 **Multimodal histology integration.** Visium and MERFISH datasets often come with H&E tissue images. A future agent could overlay gene expression or cell annotations on the actual histology image, and use vision models to answer questions about tissue morphology alongside transcriptomics.
-
-## License
-
-MIT
