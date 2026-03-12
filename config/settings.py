@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     data_dir: Path = Field(default=Path("./data/cache"))
     max_loaded_datasets: int = Field(default=3)
 
+    # --- Vector Database (RAG) ---
+    vectordb_dir: Path = Field(
+        default=Path("./data/vectordb"),
+        description="Directory for persistent ChromaDB storage",
+    )
+
     # --- Sub-agent model (optional, uses a cheaper model for tool-calling agents) ---
     sub_agent_model: str = Field(default="", description="Model for sub-agents. If empty, uses the main model. Set to e.g. gpt-4o-mini to save tokens.")
 

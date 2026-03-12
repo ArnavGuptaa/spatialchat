@@ -42,7 +42,7 @@ Each sub-agent loops internally using LangChain's `bind_tools` ReAct pattern (LL
 
 **Universal h5ad loader.** All datasets load from h5ad files referenced in `data/catalog.json`. No per-dataset loader functions.
 
-**Metadata store.** Pre-computed gene lists and cell types per dataset live in `data/metadata/` as JSON. This enables fuzzy gene matching (4-tier: exact case-insensitive, edit-distance, substring, prefix) and fast lookups without loading the full AnnData into memory.
+**Metadata store with ChromaDB vector backend.** Gene expression statistics and cell type metadata are indexed in ChromaDB as numeric embeddings, enabling RAG-style semantic search ("find markers of endothelium") and vector similarity search ("find genes with similar expression patterns to T"). JSON metadata files in `data/metadata/` are kept as a lightweight fallback. The embedding strategy uses per-gene summary statistics (mean, median, pct_expressing, std, per-celltype means) normalised to unit vectors, so cosine distance captures expression profile shape rather than magnitude.
 
 ## Data Ingestion Guide
 
@@ -62,7 +62,7 @@ python scripts/ingest_dataset.py \
     --description "MERFISH data from mouse cortex"
 ```
 
-This will validate the h5ad file (checks for `spatial` in obsm, verifies the celltype column), copy it to `data/anndata/my_experiment.h5ad`, update `data/catalog.json`, and build a metadata JSON in `data/metadata/`.
+This will validate the h5ad file (checks for `spatial` in obsm, verifies the celltype column), copy it to `data/anndata/my_experiment.h5ad`, update `data/catalog.json`, build a metadata JSON in `data/metadata/`, and index gene expression embeddings + cell type metadata in ChromaDB (`data/vectordb/`).
 
 ### Requirements for h5ad files
 
@@ -113,7 +113,7 @@ save_metadata("my_dataset", meta)
 
 ### Metadata store
 
-Each ingested dataset gets a JSON metadata file in `data/metadata/{dataset_id}.json`:
+Each ingested dataset gets a JSON metadata file in `data/metadata/{dataset_id}.json` plus ChromaDB collections in `data/vectordb/`:
 
 ```json
 {
@@ -127,7 +127,14 @@ Each ingested dataset gets a JSON metadata file in `data/metadata/{dataset_id}.j
 }
 ```
 
-This powers fuzzy gene matching (`find_similar_genes()` uses 4-tier matching), fast lookups without loading the full AnnData, and helpful error messages with suggestions when a gene isn't found.
+The ChromaDB vector store (`data/vector_store.py`) indexes two collections per dataset: `gene_metadata_{dataset_id}` stores per-gene expression statistics as numeric embeddings for similarity search, and `celltype_metadata_{dataset_id}` stores cell type info with marker genes for keyword search. Gene lookups try ChromaDB first, then fall back to JSON if the vector store is unavailable.
+
+To rebuild the vector index for existing datasets:
+
+```bash
+python scripts/build_vector_index.py           # index all datasets
+python scripts/build_vector_index.py --force    # re-index even if already done
+```
 
 ## Available Tools
 
@@ -141,6 +148,9 @@ This powers fuzzy gene matching (`find_similar_genes()` uses 4-tier matching), f
 | `compare_expression` | exploratory | Mann-Whitney U test between two groups |
 | `plot_celltype_spatial` | exploratory | Plot cell types on spatial coords (auto-resolves column) |
 | `gene_expression_by_celltype` | exploratory | Bar chart of gene expression per cell type |
+| `rag_query_genes` | exploratory | RAG: search genes by biological description |
+| `rag_find_similar_genes` | exploratory | RAG: find genes with similar expression profiles (vector similarity) |
+| `rag_query_celltypes` | exploratory | RAG: search cell types and their marker genes |
 | `spatial_autocorrelation` | spatial_stats | Moran's I test for spatial autocorrelation |
 | `co_occurrence` | spatial_stats | Cell type co-occurrence analysis |
 | `neighborhood_enrichment` | neighborhood | Neighborhood enrichment analysis |
@@ -160,6 +170,7 @@ All settings are in `.env`. See `.env.example` for the full list.
 | `LANGCHAIN_API_KEY` | LangSmith API key for tracing | (none) |
 | `LANGCHAIN_PROJECT` | LangSmith project name | `spatialchat` |
 | `MAX_LOADED_DATASETS` | Max datasets in memory cache | `3` |
+| `VECTORDB_DIR` | ChromaDB storage directory | `./data/vectordb` |
 
 ## LangSmith Tracing
 
@@ -182,18 +193,22 @@ spatialchat/
 |   +-- base.py              # PlotStore + tool_result helper
 |   +-- dataset_tools.py     # search, load, validate (fuzzy gene matching)
 |   +-- expression_tools.py  # spatial plots, celltype analysis
+|   +-- rag_tools.py         # RAG retrieval tools (gene/celltype search via ChromaDB)
 |   +-- stats_tools.py       # Moran's I, co-occurrence
 |   +-- neighbor_tools.py    # enrichment, interaction matrix
 +-- data/
 |   +-- catalog.json         # Dataset catalog
 |   +-- loaders.py           # Universal h5ad loader + cache
-|   +-- metadata_store.py    # Pre-computed gene lists + celltypes per dataset
-|   +-- metadata/            # JSON metadata files per dataset
+|   +-- metadata_store.py    # Gene/celltype lookups (ChromaDB primary, JSON fallback)
+|   +-- vector_store.py      # ChromaDB vector store for gene expression RAG
+|   +-- metadata/            # JSON metadata files per dataset (fallback)
+|   +-- vectordb/            # ChromaDB persistent storage (gitignored)
 |   +-- anndata/             # h5ad files (gitignored)
 +-- config/
 |   +-- settings.py          # Pydantic settings from .env
 +-- scripts/
-|   +-- ingest_dataset.py    # CLI for adding new datasets + metadata
+|   +-- ingest_dataset.py    # CLI for adding new datasets + metadata + vector indexing
+|   +-- build_vector_index.py # One-time migration: build ChromaDB index from existing datasets
 +-- tests/
     +-- test_tools.py        # Unit tests for tools
     +-- test_graph.py        # Graph routing tests

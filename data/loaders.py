@@ -170,4 +170,28 @@ def load_dataset(dataset_id: str) -> ad.AnnData:
 
     logger.info(f"Loaded: {adata.shape[0]} cells, {adata.shape[1]} genes")
     _cache.put(dataset_id, adata)
+
+    # Check ChromaDB index — only auto-index if missing.
+    # Pre-building the index with `python scripts/build_vector_index.py`
+    # before launching the app avoids this on-demand indexing overhead.
+    try:
+        from data.vector_store import get_vector_store
+        vs = get_vector_store()
+        if vs.is_indexed(dataset_id):
+            logger.info(f"ChromaDB index found for '{dataset_id}' — skipping auto-index")
+        else:
+            logger.info(
+                f"No ChromaDB index for '{dataset_id}' — building now "
+                f"(run 'python scripts/build_vector_index.py' beforehand to avoid this delay)"
+            )
+            celltype_col = info.get("celltype")
+            result = vs.index_dataset(dataset_id, adata, celltype_col)
+            logger.info(
+                f"Auto-indexed '{dataset_id}' in ChromaDB: "
+                f"{result['n_genes_indexed']} genes, "
+                f"{result['n_celltypes_indexed']} celltypes"
+            )
+    except Exception as e:
+        logger.warning(f"ChromaDB auto-indexing failed for '{dataset_id}': {e}")
+
     return adata

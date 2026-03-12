@@ -1,15 +1,16 @@
 """
-Dataset metadata store — pre-computed gene lists and cell types per dataset.
+Dataset metadata store — gene lists, cell types, and vector search per dataset.
 
-Stored as JSON files in data/metadata/{dataset_id}.json so that tools can
-quickly look up gene names and cell types without loading the full AnnData
-into memory. Updated automatically by the ingestion script.
+Primary store is now ChromaDB (via ``data.vector_store``), which holds gene
+expression embeddings and cell type metadata.  JSON files in
+``data/metadata/{dataset_id}.json`` are kept as a lightweight fallback for
+environments where ChromaDB is not installed or not yet indexed.
 
-Schema per dataset:
+Schema per JSON file:
 {
     "dataset_id": "mouse_brain_seqfish",
-    "genes": ["Abcc4", "Acp5", ...],          # full sorted gene list
-    "celltypes": ["Astrocytes", "Neurons", ...], # unique cell types (if available)
+    "genes": ["Abcc4", "Acp5", ...],
+    "celltypes": ["Astrocytes", "Neurons", ...],
     "n_cells": 19416,
     "n_genes": 351,
     "annotations": ["celltype_mapped_refined"],
@@ -29,6 +30,23 @@ logger = logging.getLogger(__name__)
 
 METADATA_DIR = Path(__file__).parent / "metadata"
 
+
+# ---------------------------------------------------------------------------
+# ChromaDB helpers (lazy import so the module works without chromadb)
+# ---------------------------------------------------------------------------
+
+def _get_vs():
+    """Return the VectorStore singleton, or None if unavailable."""
+    try:
+        from data.vector_store import get_vector_store
+        return get_vector_store()
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# JSON persistence (kept as fallback)
+# ---------------------------------------------------------------------------
 
 def _ensure_metadata_dir():
     METADATA_DIR.mkdir(parents=True, exist_ok=True)
@@ -62,6 +80,9 @@ def build_metadata_from_adata(dataset_id: str, adata, celltype_col: Optional[str
     """
     Extract metadata from an AnnData object.
 
+    Also triggers ChromaDB indexing (gene expression embeddings + celltype
+    metadata) when the vector store is available.
+
     Args:
         dataset_id: The dataset identifier
         adata: An AnnData object
@@ -80,7 +101,7 @@ def build_metadata_from_adata(dataset_id: str, adata, celltype_col: Optional[str
         else:
             celltypes = sorted(cats.unique().tolist())
 
-    return {
+    metadata = {
         "dataset_id": dataset_id,
         "genes": genes,
         "celltypes": celltypes,
@@ -90,12 +111,35 @@ def build_metadata_from_adata(dataset_id: str, adata, celltype_col: Optional[str
         "celltype_column": celltype_col or "",
     }
 
+    # Index in ChromaDB (gene expression embeddings + celltype metadata)
+    vs = _get_vs()
+    if vs is not None:
+        try:
+            result = vs.index_dataset(dataset_id, adata, celltype_col)
+            logger.info(
+                f"ChromaDB indexed {result['n_genes_indexed']} genes, "
+                f"{result['n_celltypes_indexed']} celltypes for '{dataset_id}'"
+            )
+        except Exception as e:
+            logger.warning(f"ChromaDB indexing failed for '{dataset_id}': {e}")
 
-# Query helpers (used by tools)
+    return metadata
+
+
+# ---------------------------------------------------------------------------
+# Query helpers (used by tools) — ChromaDB primary, JSON fallback
+# ---------------------------------------------------------------------------
 
 
 def get_gene_list(dataset_id: str) -> Optional[list[str]]:
-    """Get the full gene list for a dataset from metadata."""
+    """Get the full gene list for a dataset (ChromaDB first, then JSON)."""
+    vs = _get_vs()
+    if vs is not None and vs.is_indexed(dataset_id):
+        genes = vs.get_gene_list(dataset_id)
+        if genes:
+            return genes
+
+    # Fallback to JSON
     meta = load_metadata(dataset_id)
     if meta is None:
         return None
@@ -103,7 +147,14 @@ def get_gene_list(dataset_id: str) -> Optional[list[str]]:
 
 
 def get_celltypes(dataset_id: str) -> Optional[list[str]]:
-    """Get the cell type list for a dataset from metadata."""
+    """Get the cell type list for a dataset (ChromaDB first, then JSON)."""
+    vs = _get_vs()
+    if vs is not None and vs.is_indexed(dataset_id):
+        cts = vs.get_celltypes(dataset_id)
+        if cts:
+            return cts
+
+    # Fallback to JSON
     meta = load_metadata(dataset_id)
     if meta is None:
         return None
@@ -114,9 +165,20 @@ def find_similar_genes(dataset_id: str, query: str, n: int = 5) -> list[str]:
     """
     Find genes similar to the query using fuzzy matching.
 
-    Uses difflib.get_close_matches for fast approximate string matching
-    on the pre-computed gene list. Falls back to substring matching.
+    Tries ChromaDB text search first for semantic matching, then falls back
+    to difflib-based fuzzy matching on the gene list.
     """
+    # --- ChromaDB text search (semantic) ---
+    vs = _get_vs()
+    if vs is not None and vs.is_indexed(dataset_id):
+        try:
+            results = vs.search_genes_by_text(dataset_id, query, n=n)
+            if results:
+                return [r["gene_symbol"] for r in results]
+        except Exception as e:
+            logger.debug(f"ChromaDB text search failed, falling back to difflib: {e}")
+
+    # --- Fallback: difflib fuzzy matching ---
     genes = get_gene_list(dataset_id)
     if not genes:
         return []
@@ -128,7 +190,6 @@ def find_similar_genes(dataset_id: str, query: str, n: int = 5) -> list[str]:
         return exact
 
     # 2. Fuzzy match (edit distance)
-    # get_close_matches is case-sensitive, so we build a lowercase map
     lower_to_orig = {}
     lower_genes = []
     for g in genes:
@@ -148,3 +209,59 @@ def find_similar_genes(dataset_id: str, query: str, n: int = 5) -> list[str]:
     # 4. Prefix match
     prefix = [g for g in genes if g.lower().startswith(lower[:3])][:n]
     return prefix
+
+
+# ---------------------------------------------------------------------------
+# New semantic / RAG search functions
+# ---------------------------------------------------------------------------
+
+
+def search_genes_semantic(dataset_id: str, query: str, n: int = 10) -> list[dict]:
+    """
+    Search genes semantically using ChromaDB document search.
+
+    Returns a list of dicts with gene_symbol, mean_expression,
+    pct_expressing, distance.
+
+    Example:
+        search_genes_semantic("mouse_brain_seqfish", "highly expressed")
+    """
+    vs = _get_vs()
+    if vs is None:
+        return []
+    return vs.search_genes_by_text(dataset_id, query, n)
+
+
+def find_expression_similar_genes(dataset_id: str, gene: str, n: int = 10) -> list[dict]:
+    """
+    Find genes with similar expression profiles via vector similarity search.
+
+    Uses the gene expression embedding stored in ChromaDB to find genes
+    whose statistical profiles (mean, median, pct_expressing, per-celltype
+    means) are closest in cosine distance.
+
+    Args:
+        dataset_id: Dataset to search.
+        gene: Reference gene name.
+        n: Number of similar genes to return.
+
+    Returns:
+        List of dicts with gene_symbol, distance, mean_expression,
+        pct_expressing, top_celltypes.
+    """
+    vs = _get_vs()
+    if vs is None:
+        return []
+    return vs.search_similar_genes(dataset_id, gene, n)
+
+
+def search_celltypes_semantic(dataset_id: str, query: str, n: int = 5) -> list[dict]:
+    """
+    Search cell types by keyword using ChromaDB.
+
+    Returns list of dicts with celltype, n_cells, marker_genes.
+    """
+    vs = _get_vs()
+    if vs is None:
+        return []
+    return vs.search_celltypes(dataset_id, query, n)

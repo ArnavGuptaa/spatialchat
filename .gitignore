@@ -19,13 +19,24 @@ env/
 # Jupyter
 .ipynb_checkpoints/
 
-# Data (large h5ad files)
+# Data (large h5ad files & generated caches)
 data/anndata/*.h5ad
 data/cache/
+data/vectordb/
+data/metadata/
 *.h5
+
+# Plots (generated at runtime)
+plots/
 
 # LangGraph Studio internal
 .langgraph_api/
+
+# Testing
+.pytest_cache/
+pytest-cache-files-*/
+htmlcov/
+.coverage
 
 # IDE
 .vscode/
@@ -38,5 +49,12 @@ data/cache/
 .DS_Store
 Thumbs.db
 
+# Package manager
+uv.lock
+
 # Misc
 *.log
+=0.5.0
+docs/VECTOR_DATABASE.md
+.gitignore
+notebooks/vector_db_explorer.ipynb

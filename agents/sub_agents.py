@@ -26,6 +26,7 @@ from langchain_core.messages import (
 from config.settings import get_settings
 from tools.dataset_tools import DATASET_TOOLS
 from tools.expression_tools import EXPRESSION_TOOLS
+from tools.rag_tools import RAG_TOOLS
 from tools.stats_tools import SPATIAL_STATS_TOOLS
 from tools.neighbor_tools import NEIGHBORHOOD_TOOLS
 
@@ -45,13 +46,16 @@ DATASET_FINDER_PROMPT = (
 EXPLORATORY_PROMPT = (
     "You analyze gene expression and cell types in a loaded dataset.\n"
     "Available tools:\n"
+    "- rag_query_genes: find genes matching a biological description (RAG search)\n"
+    "- rag_find_similar_genes: find genes with similar expression patterns (vector similarity)\n"
+    "- rag_query_celltypes: find cell types and their marker genes (RAG search)\n"
     "- get_gene_expression_spatial: plot a gene on spatial coords\n"
     "- show_spatial_domains: plot any annotation spatially\n"
     "- compare_expression: compare gene between two groups\n"
     "- plot_celltype_spatial: plot cell types on spatial coords (auto-resolves column)\n"
     "- gene_expression_by_celltype: bar chart of gene expression per cell type\n"
-    "Use dataset_id from context. Call only the tool needed.\n"
-    "Keep response short — key stats and interpretation only."
+    "Use RAG tools first to discover genes/celltypes, then visualize.\n"
+    "Use dataset_id from context. Keep response short — key stats and interpretation only."
 )
 
 SPATIAL_STATS_PROMPT = (
@@ -242,7 +246,7 @@ def create_dataset_finder_agent():
 
 def create_exploratory_agent():
     llm = get_settings().get_sub_agent_llm()
-    return build_sub_agent(llm, EXPRESSION_TOOLS, EXPLORATORY_PROMPT)
+    return build_sub_agent(llm, EXPRESSION_TOOLS + RAG_TOOLS, EXPLORATORY_PROMPT)
 
 
 def create_spatial_stats_agent():

@@ -53,6 +53,7 @@ Key conventions for tools:
 - Always use `tool_result()` for return values. It formats JSON consistently.
 - On failure, include a description of what the tool CAN do in the `error` field. This helps the LLM recover.
 - Use `find_similar_genes()` from `data.metadata_store` when a gene isn't found.
+- Use `search_genes_semantic()` or `find_expression_similar_genes()` from `data.metadata_store` for RAG-style gene discovery.
 - Never return large data (arrays, full gene lists). Only summary statistics.
 - Use `fig_to_plot_id(fig)` for plots. Never base64 in results.
 

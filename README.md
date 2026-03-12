@@ -2,7 +2,7 @@
 
 A natural language interface for spatial transcriptomics analysis, built on a **supervisor-routed multi-agent architecture** using [LangGraph](https://github.com/langchain-ai/langgraph). The frontend is a [Streamlit](https://streamlit.io/) web app, and all agent runs can be traced and debugged through [LangSmith](https://smith.langchain.com).
 
-Ask questions like *"Show Snap25 expression in the mouse brain Visium dataset"* and get back spatial plots, statistics, and interpretations through conversation.
+Ask questions like *"Show Snap25 expression in the mouse brain Visium dataset"* or *"Find genes with similar expression patterns to T"* and get back spatial plots, statistics, and interpretations through conversation.
 
 <p align="center">
   <img src="docs/example_query.png" alt="Example query showing Snap25 spatial expression in mouse brain" width="600">
@@ -19,6 +19,8 @@ The core pattern (supervisor routing to specialized sub-agents, each with their 
 SpatialChat ships with four specialized sub-agents, each with their own toolset. A supervisor routes every user query to the right agent and synthesizes the results into a single response with embedded plots.
 
 **Dataset discovery and loading.** Search available datasets by tissue, species, or technology. Load any h5ad file with spatial coordinates. Fuzzy gene name matching handles typos and case mismatches automatically. An LRU cache manages memory so multiple large datasets (1-5 GB each) can be swapped without crashing.
+
+**RAG-powered gene discovery.** A ChromaDB vector database indexes gene expression statistics (mean, median, % expressing, per-celltype profiles) as numeric embeddings for each dataset. Agents can search for genes by biological description ("find markers of endothelium") or find genes with similar expression patterns using vector similarity search. This is retrieval-augmented generation applied to spatial transcriptomics.
 
 **Spatial gene expression.** Plot any gene on tissue coordinates with a color-scaled scatter plot. Compare expression between two cell groups with a Mann-Whitney U test (p-value, log2 fold change, violin plot). View mean expression across all cell types as a ranked bar chart. Visualize spatial domains, clusters, or any categorical annotation on the tissue.
 
@@ -67,7 +69,22 @@ uv run python -c "import squidpy as sq; adata = sq.datasets.visium_hne_adata(); 
 
 Or bring your own h5ad files (see the [Data Ingestion Guide](docs/ARCHITECTURE.md#data-ingestion-guide)).
 
-**4. Run**
+**4. Build the vector index (for RAG) — do this before launching the app**
+
+```bash
+# Pre-build ChromaDB index for all datasets in the catalog
+uv run python scripts/build_vector_index.py
+
+# Or index a single dataset
+uv run python scripts/build_vector_index.py --dataset-id mouse_brain_seqfish
+
+# Re-index (e.g. after re-ingesting data)
+uv run python scripts/build_vector_index.py --force
+```
+
+This computes per-gene expression statistics and indexes them as vector embeddings in ChromaDB. Building the index ahead of time is **strongly recommended** — it takes 30-60 seconds per dataset but only needs to be done once. If you skip this step, the app will auto-index on first dataset load, which makes the first query noticeably slow.
+
+**5. Run**
 
 ```bash
 uv run run-app
@@ -116,14 +133,14 @@ The documentation is split into focused guides:
 | `mouse_brain_seqfish` | Mouse brain sub-ventricular zone | 19,416 | 351 | seqFISH |
 | `mouse_brain_visium` | Mouse brain sagittal section | 2,688 | 18,078 | 10x Visium |
 
-## Future Directions
+## Vector Database (RAG)
 
-**Vector database backend instead of h5ad files.** The current architecture loads full AnnData objects from h5ad files into memory and queries them with pandas/numpy. A natural next step is to replace this with a RAG pipeline backed by a vector database (e.g., Pinecone, Weaviate, or Chroma). Gene expression profiles and cell metadata would be embedded and indexed, letting the agent retrieve relevant slices without loading entire datasets. This would eliminate the LRU memory ceiling and scale to hundreds of datasets.
+SpatialChat uses **ChromaDB** as an embedded vector database for retrieval-augmented generation over gene expression data. Each gene is embedded as a fixed-size vector built from its expression statistics: `[log1p(mean), log1p(median), pct_expressing, log1p(std), per_celltype_means...]`, L2-normalised for cosine similarity. This means genes with similar expression patterns across cell types cluster together in vector space.
 
-**Trajectory and RNA velocity agents.** Add a sub-agent for pseudotime analysis (diffusion pseudotime, PAGA) and RNA velocity (scVelo). This would let users ask questions like "What is the differentiation trajectory of these cells?" or "Show me the velocity field overlaid on the UMAP."
+The vector store is populated during dataset ingestion (`ingest_dataset.py`) or via a one-time migration script (`build_vector_index.py`). Three RAG tools are available to the exploratory agent:
 
-**Cross-dataset comparison agent.** A sub-agent that can load two datasets simultaneously and compare them: shared cell types, differential gene expression across conditions, batch-corrected joint embeddings (Harmony, scVI).
+- `rag_query_genes` — search genes by natural language description
+- `rag_find_similar_genes` — find genes with similar expression profiles (vector similarity)
+- `rag_query_celltypes` — search cell types and their marker genes
 
-**Natural language data ingestion.** Let users upload raw h5ad files through the chat interface and have an ingestion agent automatically detect spatial coordinates, cell type annotations, and gene naming conventions, then register the dataset in the catalog without manual configuration.
-
-**Multimodal histology integration.** Visium and MERFISH datasets often come with H&E tissue images. A future agent could overlay gene expression or cell annotations on the actual histology image, and use vision models to answer questions about tissue morphology alongside transcriptomics.
+ChromaDB runs in embedded/persistent mode (no separate server). JSON metadata files are kept as a fallback.

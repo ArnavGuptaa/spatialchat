@@ -107,6 +107,7 @@ This will:
   2. Copy it to data/anndata/{dataset_id}.h5ad
   3. Add an entry to data/catalog.json
   4. Build metadata DB (gene list + celltypes) in data/metadata/{dataset_id}.json
+  5. Index gene expression embeddings + celltype metadata in ChromaDB (data/vectordb/)
 """
 
 from __future__ import annotations
@@ -267,6 +268,25 @@ def main():
     print(f"    Genes indexed: {len(metadata['genes'])}")
     print(f"    Cell types indexed: {len(metadata['celltypes'])}")
 
+    # ChromaDB vector indexing (gene expression embeddings + celltype metadata)
+    # build_metadata_from_adata already triggers indexing when ChromaDB is available,
+    # but we report the status here for visibility.
+    try:
+        from data.vector_store import get_vector_store
+        vs = get_vector_store()
+        if vs.is_indexed(args.dataset_id):
+            gene_count = len(vs.get_gene_list(args.dataset_id))
+            ct_count = len(vs.get_celltypes(args.dataset_id))
+            print(f"  Vector DB (ChromaDB): data/vectordb/")
+            print(f"    Gene embeddings indexed: {gene_count}")
+            print(f"    Celltype metadata indexed: {ct_count}")
+        else:
+            print("  Vector DB: indexing was skipped (check logs for details)")
+    except ImportError:
+        print("  Vector DB: chromadb not installed — skipping vector indexing")
+    except Exception as e:
+        print(f"  Vector DB: indexing error — {e}")
+
     # Done
     print(f"\nSuccessfully ingested '{args.dataset_id}'!")
     print(f"  Data file: {dest_path}")
@@ -275,6 +295,7 @@ def main():
     if celltype_col:
         print(f'  "Show cell types spatially in {args.dataset_id}"')
     print(f'  "What genes are available in {args.dataset_id}?"')
+    print(f'  "Find genes similar to Snap25 in {args.dataset_id}"  (RAG search)')
 
 
 if __name__ == "__main__":
